@@ -1,9 +1,8 @@
-import {
-  type CoinbaseWalletProvider,
-  type CoinbaseWalletSDK,
-} from '@coinbase/wallet-sdk'
+import { type CoinbaseWalletSDK } from '@coinbase/wallet-sdk'
+import type { CoinbaseWalletProvider } from '@coinbase/wallet-sdk/dist/CoinbaseWalletProvider.js'
+import type { CoinbaseWalletSDKOptions } from '@coinbase/wallet-sdk/dist/CoinbaseWalletSDK.js'
+import type { ProviderInterface } from '@coinbase/wallet-sdk/dist/core/type/ProviderInterface.js'
 import { ChainNotConfiguredError, createConnector } from '@wagmi/core'
-import type { Evaluate, Mutable, Omit } from '@wagmi/core/internal'
 import {
   type ProviderRpcError,
   SwitchChainError,
@@ -12,43 +11,14 @@ import {
   numberToHex,
 } from 'viem'
 
-// TODO(@3): Set `enableMobileWalletLink` to `true`
-export type CoinbaseWalletParameters = Evaluate<
-  Mutable<
-    Omit<
-      ConstructorParameters<typeof CoinbaseWalletSDK>[0],
-      'reloadOnDisconnect' // remove property since TSDoc says default is `true`
-    >
-  > & {
-    /**
-     * Fallback Ethereum JSON RPC URL
-     * @default ""
-     */
-    jsonRpcUrl?: string | undefined
-    /**
-     * Fallback Ethereum Chain ID
-     * @default 1
-     */
-    chainId?: number | undefined
-    /**
-     * Whether or not to reload dapp automatically after disconnect.
-     * @default false
-     */
-    reloadOnDisconnect?: boolean | undefined
-  }
->
-
 coinbaseWallet.type = 'coinbaseWallet' as const
-export function coinbaseWallet(parameters: CoinbaseWalletParameters) {
-  const reloadOnDisconnect = false
-
-  type Provider = CoinbaseWalletProvider
+export function coinbaseWallet(parameters: CoinbaseWalletSDKOptions) {
   type Properties = {}
 
   let sdk: CoinbaseWalletSDK | undefined
-  let walletProvider: Provider | undefined
+  let walletProvider: ProviderInterface | undefined
 
-  return createConnector<Provider, Properties>((config) => ({
+  return createConnector<ProviderInterface, Properties>((config) => ({
     id: 'coinbaseWalletSDK',
     name: 'Coinbase Wallet',
     type: coinbaseWallet.type,
@@ -66,7 +36,7 @@ export function coinbaseWallet(parameters: CoinbaseWalletParameters) {
         provider.on('disconnect', this.onDisconnect.bind(this))
 
         // Switch to chain if provided
-        let currentChainId = await this.getChainId()
+        let currentChainId: number = await this.getChainId()
         if (chainId && currentChainId !== chainId) {
           const chain = await this.switchChain!({ chainId }).catch((error) => {
             if (error.code === UserRejectedRequestError.code) throw error
@@ -93,8 +63,8 @@ export function coinbaseWallet(parameters: CoinbaseWalletParameters) {
       provider.removeListener('chainChanged', this.onChainChanged)
       provider.removeListener('disconnect', this.onDisconnect.bind(this))
 
-      provider.disconnect()
-      provider.close()
+      provider?.disconnect?.() // non extension
+      sdk?.disconnect?.() // calls legacy method extension.close if necessary
     },
     async getAccounts() {
       const provider = await this.getProvider()
@@ -106,7 +76,7 @@ export function coinbaseWallet(parameters: CoinbaseWalletParameters) {
     },
     async getChainId() {
       const provider = await this.getProvider()
-      const chainId = await provider.request<number>({ method: 'eth_chainId' })
+      const chainId = await provider.request({ method: 'eth_chainId' })
       return Number(chainId)
     },
     async getProvider() {
@@ -122,29 +92,12 @@ export function coinbaseWallet(parameters: CoinbaseWalletParameters) {
           SDK = CoinbaseWalletSDK.default
         else
           SDK = CoinbaseWalletSDK as unknown as typeof CoinbaseWalletSDK.default
-        sdk = new SDK({ reloadOnDisconnect, ...parameters })
+        sdk = new SDK(parameters)
 
-        // Force types to retrieve private `walletExtension` method from the Coinbase Wallet SDK.
-        const walletExtensionChainId = (
-          sdk as unknown as {
-            get walletExtension(): { getChainId(): number } | undefined
-          }
-        ).walletExtension?.getChainId()
-
-        const chain =
-          config.chains.find((chain) =>
-            parameters.chainId
-              ? chain.id === parameters.chainId
-              : chain.id === walletExtensionChainId,
-          ) || config.chains[0]
-        const chainId = parameters.chainId || chain?.id
-        const jsonRpcUrl =
-          parameters.jsonRpcUrl || chain?.rpcUrls.default.http[0]
-
-        walletProvider = sdk.makeWeb3Provider(jsonRpcUrl, chainId)
+        walletProvider = sdk.makeWeb3Provider() as ProviderInterface
       }
 
-      return walletProvider
+      return walletProvider as ProviderInterface
     },
     async isAuthorized() {
       try {
