@@ -1,5 +1,4 @@
 import { type CoinbaseWalletSDK } from '@coinbase/wallet-sdk'
-import type { CoinbaseWalletProvider } from '@coinbase/wallet-sdk/dist/CoinbaseWalletProvider.js'
 import type { CoinbaseWalletSDKOptions } from '@coinbase/wallet-sdk/dist/CoinbaseWalletSDK.js'
 import type { ProviderInterface } from '@coinbase/wallet-sdk/dist/core/type/ProviderInterface.js'
 import { ChainNotConfiguredError, createConnector } from '@wagmi/core'
