@@ -64,8 +64,7 @@ export function coinbaseWallet(parameters: CoinbaseWalletParameters) {
       provider.removeListener('chainChanged', this.onChainChanged)
       provider.removeListener('disconnect', this.onDisconnect.bind(this))
 
-      provider?.disconnect?.() // non extension
-      sdk?.disconnect?.() // calls legacy method extension.close if necessary
+      provider.disconnect()
     },
     async getAccounts() {
       const provider = await this.getProvider()

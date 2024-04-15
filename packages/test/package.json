@@ -1,7 +1,7 @@
 {
   "name": "@wagmi/test",
   "description": "Test utils for wagmi",
-  "private": true,
+  "private": false,
   "license": "MIT",
   "repository": {
     "type": "git",

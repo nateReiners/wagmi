@@ -1,6 +1,6 @@
 {
   "name": "react-register",
-  "private": true,
+  "private": false,
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit"
