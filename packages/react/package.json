@@ -1,7 +1,7 @@
 {
   "name": "wagmi-cb-beta",
   "description": "React Hooks for Ethereum",
-  "version": "2.5.14",
+  "version": "3.0.0-beta.1",
   "license": "MIT",
   "repository": {
     "type": "git",
